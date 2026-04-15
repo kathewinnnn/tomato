@@ -289,6 +289,32 @@ if (!empty($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date']))
   </div>
 </div>
 
+<!-- ═══════════════ DELETE CONFIRMATION MODAL ═══════════════ -->
+<div class="modal-overlay" id="delete-modal" onclick="handleDeleteBackdropClick(event)">
+  <div class="modal" style="max-width: 380px;">
+    <div class="modal-head" style="background: var(--red-pale); border-bottom-color: rgba(214,48,49,0.15);">
+      <div class="modal-head-icon" style="background: var(--red-pale); color: var(--red);">
+        <i class="fas fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <div class="modal-title">Delete Task</div>
+        <div class="modal-subtitle" id="delete-task-name">—</div>
+      </div>
+      <button type="button" class="modal-close" onclick="closeDeleteModal()" title="Close"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" style="text-align: center; padding: 24px 20px;">
+      <p style="margin: 0 0 8px; font-size: 0.95rem; color: var(--text);">Are you sure you want to delete this task?</p>
+      <p style="margin: 0; font-size: 0.82rem; color: var(--text-muted);">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer" style="justify-content: center; gap: 10px;">
+      <button type="button" class="btn btn-delete" onclick="confirmDeleteEvent()">
+        <i class="fas fa-trash-can"></i> Delete
+      </button>
+      <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -401,7 +427,11 @@ function renderCalendar() {
 
 function renderCell(grid, d, key, otherMonth) {
   const cell = document.createElement('div');
-  cell.className = 'cal-cell' + (otherMonth ? ' other-month' : '');
+  const cellDate = new Date(key + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const isPast = cellDate < today;
+  
+  cell.className = 'cal-cell' + (otherMonth ? ' other-month' : '') + (isPast ? ' past-date' : '');
   if (key === todayKey && !otherMonth) cell.classList.add('today');
   if (key === selectedDate)            cell.classList.add('selected');
 
@@ -428,6 +458,10 @@ function renderCell(grid, d, key, otherMonth) {
 
 /* ══════════ DATE SELECTION ══════════ */
 function selectDate(key) {
+  const cellDate = new Date(key + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  if (cellDate < today) { showToast('Cannot select past dates.', true); return; }
+  
   selectedDate = key;
   renderCalendar();
   renderDayPanel();
@@ -544,6 +578,12 @@ function selectEditType(type) {
 /* ══════════ ADD EVENT ══════════ */
 function addEvent() {
   if (!selectedDate) { showToast('Please select a date on the calendar first.', true); return; }
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const selected = new Date(selectedDate + 'T00:00:00');
+  if (selected < today) { showToast('Cannot schedule tasks on past dates.', true); return; }
+  
   const name = document.getElementById('task-name').value.trim();
   if (!name) { document.getElementById('task-name').focus(); showToast('Task name is required.', true); return; }
   if (isSaving) return;
@@ -595,27 +635,54 @@ function addEvent() {
 }
 
 /* ══════════ DELETE ══════════ */
+let deleteTargetKey = null;
+let deleteTargetId = null;
+
 function confirmDelete(key, id, name) {
-  if (!confirm('Delete task "' + name + '"?')) return;
+  deleteTargetKey = key;
+  deleteTargetId = id;
+  document.getElementById('delete-task-name').textContent = name;
+  document.getElementById('delete-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDeleteModal() {
+  document.getElementById('delete-modal').classList.remove('open');
+  document.body.style.overflow = '';
+  deleteTargetKey = null;
+  deleteTargetId = null;
+}
+
+function handleDeleteBackdropClick(e) {
+  if (e.target === document.getElementById('delete-modal')) closeDeleteModal();
+}
+
+function confirmDeleteEvent() {
+  if (deleteTargetKey === null || deleteTargetId === null) return;
+  const key = deleteTargetKey;
+  const id = deleteTargetId;
+  closeDeleteModal();
   deleteEvent(key, id);
 }
 
 function deleteEvent(key, id) {
-  const body = new URLSearchParams({ action:'delete', id });
+  const body = new URLSearchParams({ action:'delete', id: String(id) });
   fetch('save_schedule.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body })
     .then(r => r.json())
     .then(data => {
       if (data.success || data.deleted) {
-        if (events[key]) {
-          events[key] = events[key].filter(e => e.id !== id);
-          if (events[key].length === 0) delete events[key];
+        if (events[key] && Array.isArray(events[key])) {
+          events[key] = events[key].filter(e => Number(e.id) !== Number(id));
+          if (events[key].length === 0) {
+            delete events[key];
+          }
         }
         renderCalendar();
         renderDayPanel();
         renderUpcoming();
         showToast('Task deleted.');
       } else {
-        showToast('Error deleting task.', true);
+        showToast('Error: ' + (data.error || 'Could not delete task.'), true);
       }
     })
     .catch(() => showToast('Network error.', true));
@@ -675,13 +742,18 @@ function handleBackdropClick(e) {
 
 function saveEdit() {
   if (editingKey === null || editingId === null) return;
+  
+  const newDate = document.getElementById('edit-date').value || editingKey;
+  const editDate = new Date(newDate + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  if (editDate < today) { showToast('Cannot reschedule to a past date.', true); return; }
+  
   const name = document.getElementById('edit-name').value.trim();
   if (!name) { document.getElementById('edit-name').focus(); showToast('Task name is required.', true); return; }
 
   const time    = document.getElementById('edit-time').value || '06:00';
   const zone    = document.getElementById('edit-zone').value;
   const notes   = document.getElementById('edit-notes').value.trim();
-  const newDate = document.getElementById('edit-date').value || editingKey;
 
   const body = new URLSearchParams({
     action: 'update',
@@ -734,10 +806,18 @@ function deleteFromModal() {
 
 /* ══════════ KEYBOARD ══════════ */
 document.addEventListener('keydown', e => {
-  const modal = document.getElementById('edit-modal');
-  if (!modal.classList.contains('open')) return;
-  if (e.key === 'Escape')                   closeModal();
-  if (e.key === 'Enter' && e.ctrlKey)       saveEdit();
+  const editModal = document.getElementById('edit-modal');
+  const deleteModal = document.getElementById('delete-modal');
+  
+  if (editModal.classList.contains('open')) {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Enter' && e.ctrlKey) saveEdit();
+  }
+  
+  if (deleteModal.classList.contains('open')) {
+    if (e.key === 'Escape') closeDeleteModal();
+    if (e.key === 'Enter') confirmDeleteEvent();
+  }
 });
 
 /* ══════════ SIDEBAR CLOSE ON OUTSIDE CLICK ══════════ */

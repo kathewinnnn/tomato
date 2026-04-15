@@ -69,6 +69,10 @@ if ($action === 'add') {
     if (!valid_type($type)) { echo json_encode(['error' => 'Invalid task type']);   exit; }
     if ($name === '')        { echo json_encode(['error' => 'Task name required']);  exit; }
     if (!valid_time($time))  { $time = '06:00'; }
+    
+    $today = new DateTime('today');
+    $scheduleDate = new DateTime($date);
+    if ($scheduleDate < $today) { echo json_encode(['error' => 'Cannot schedule on past dates']); exit; }
 
     try {
         $stmt = $pdo->prepare("
@@ -108,6 +112,10 @@ if ($action === 'update') {
     if ($name === '')         { echo json_encode(['error' => 'Task name required']);  exit; }
     if (!valid_time($time))   { $time = '06:00'; }
 
+    $today = new DateTime('today');
+    $scheduleDate = new DateTime($date);
+    if ($scheduleDate < $today) { echo json_encode(['error' => 'Cannot reschedule to a past date']); exit; }
+
     try {
         // Only allow editing own rows
         $stmt = $pdo->prepare("
@@ -144,7 +152,8 @@ if ($action === 'update') {
 
 /* ════════════ DELETE ════════════ */
 if ($action === 'delete') {
-    $id = (int) ($input['id'] ?? 0);
+    $rawId = $input['id'] ?? $_POST['id'] ?? null;
+    $id = (int) ($rawId ?? 0);
     if ($id <= 0) { echo json_encode(['error' => 'Invalid ID']); exit; }
 
     try {

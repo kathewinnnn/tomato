@@ -1,7 +1,7 @@
 :root {
       --red: #D63031; --red-dark: #A82323; --red-pale: #FDF0EF;
       --green: #1B5E3B; --green-mid: #2D8653; --green-light: #52C78A; --green-pale: #EAF7F0;
-      --solar: #B87D00; --solar-lt: #F5C842; --solar-pale: #FDF8EC;
+      --solar: #B87D00; --solar-lt: #F5C842; --solar-pale: hsl(42, 81%, 96%);
       --water: #1575A8; --water-lt: #72C9EA; --water-pale: #EDF6FB;
       --cream: #FDF8F2; --sand: #F2EAD8; --sand-dark: #E8DCC8;
       --text: #1A1A2E; --text-muted: #6B7280;
@@ -83,6 +83,8 @@
     .cal-cell.today { background: var(--green-pale); border-color: rgba(45,134,83,0.4); }
     .cal-cell.selected { background: var(--green-pale); border-color: var(--green-mid); box-shadow: 0 0 0 2px rgba(45,134,83,0.15); }
     .cal-cell.other-month { opacity: 0.35; }
+    .cal-cell.past-date { opacity: 0.45; cursor: not-allowed; }
+    .cal-cell.past-date:hover { background: none; border-color: transparent; }
     .cal-cell-day { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); line-height: 1; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; }
     .cal-cell.today .cal-cell-day { color: var(--green-mid); }
     .cal-today-dot { width: 6px; height: 6px; background: var(--green-mid); border-radius: 50%; box-shadow: 0 0 5px var(--green-light); animation: pulse-dot 2s infinite; }
@@ -90,7 +92,8 @@
     .cal-cell-events { display: flex; flex-direction: column; gap: 2px; }
     .cal-event-pill { font-size: 0.64rem; font-weight: 600; padding: 2px 6px; border-radius: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 3px; }
     .cal-event-pill.irrigation { background: rgba(21,117,168,0.12); color: var(--water); }
-    .cal-event-pill.fertilization{ background: rgba(184,125,0,0.12); color: var(--solar); }
+    .cal-event-pill.fertilization{ background: rgba(184,125,0,0.18); color: var(--solar); border: 1px solid rgba(245,200,66,0.35); }
+    .cal-event-pill.fertilization i { color: var(--solar-lt); }
     .cal-event-pill.harvest     { background: rgba(214,48,49,0.12); color: var(--red); }
     .cal-event-pill.maintenance { background: rgba(45,134,83,0.12); color: var(--green-mid); }
     .cal-event-pill i { font-size: 0.6rem; }

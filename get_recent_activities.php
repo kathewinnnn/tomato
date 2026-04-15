@@ -13,30 +13,37 @@ $user_id = (int) $_SESSION['user_id'];
 $end_date = date('Y-m-d');
 $start_date = date('Y-m-d', strtotime('-3 days'));
 
-$conn->query("
+$stmt_update = $conn->prepare("
     UPDATE farm_schedules 
     SET status = 'completed' 
-    WHERE user_id = $user_id 
+    WHERE user_id = ? 
       AND status = 'scheduled' 
       AND schedule_date < CURDATE()
 ");
+$stmt_update->bind_param("i", $user_id);
+$stmt_update->execute();
 
-$conn->query("
+$stmt_update2 = $conn->prepare("
     UPDATE farm_schedules 
     SET status = 'completed' 
-    WHERE user_id = $user_id 
+    WHERE user_id = ? 
       AND status = 'in_progress' 
       AND schedule_date < CURDATE()
 ");
+$stmt_update2->bind_param("i", $user_id);
+$stmt_update2->execute();
 
-$result = $conn->query("
+$stmt = $conn->prepare("
     SELECT id, schedule_date, task_type, task_name, task_time, task_zone, task_notes, status
     FROM farm_schedules 
-    WHERE user_id = $user_id AND status = 'completed' 
-      AND schedule_date BETWEEN '$start_date' AND '$end_date'
+    WHERE user_id = ? AND status = 'completed' 
+      AND schedule_date BETWEEN ? AND ?
     ORDER BY schedule_date DESC, task_time DESC 
     LIMIT 10
 ");
+$stmt->bind_param("iss", $user_id, $start_date, $end_date);
+$stmt->execute();
+$result = $stmt->get_result();
 
 $activities = [];
 if ($result) {
@@ -55,6 +62,9 @@ if ($result) {
 }
 
 echo json_encode($activities);
+$stmt->close();
+$stmt_update->close();
+$stmt_update2->close();
 $conn->close();
 ?>
 
