@@ -441,7 +441,7 @@ function renderCell(grid, d, key, otherMonth) {
     const safe = ev.name.length > 14 ? ev.name.slice(0, 13) + '…' : ev.name;
     pillsHTML += `<div class="cal-event-pill ${TC[ev.type].pill}"><i class="fas ${TC[ev.type].icon}"></i> ${safe}</div>`;
   });
-  if (evs.length > 3)
+  if (evs.length > 3) 
     pillsHTML += `<div class="cal-event-pill maintenance">+${evs.length - 3} more</div>`;
 
   cell.innerHTML = `
@@ -667,9 +667,14 @@ function confirmDeleteEvent() {
 
 function deleteEvent(key, id) {
   const body = new URLSearchParams({ action:'delete', id: String(id) });
+  console.log('Sending delete request:', body.toString());
   fetch('save_schedule.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body })
-    .then(r => r.json())
+    .then(r => {
+      console.log('Delete response status:', r.status);
+      return r.json();
+    })
     .then(data => {
+      console.log('Delete response data:', data);
       if (data.success || data.deleted) {
         if (events[key] && Array.isArray(events[key])) {
           events[key] = events[key].filter(e => Number(e.id) !== Number(id));
@@ -685,7 +690,10 @@ function deleteEvent(key, id) {
         showToast('Error: ' + (data.error || 'Could not delete task.'), true);
       }
     })
-    .catch(() => showToast('Network error.', true));
+    .catch(err => {
+      console.error('Delete error:', err);
+      showToast('Network error.', true);
+    });
 }
 
 /* ══════════ CLEAR FORM ══════════ */
