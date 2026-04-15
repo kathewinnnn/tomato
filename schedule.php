@@ -11,7 +11,6 @@ $username    = htmlspecialchars($_SESSION['username'] ?? 'User',  ENT_QUOTES, 'U
 $role        = htmlspecialchars($_SESSION['role']     ?? 'Farmer', ENT_QUOTES, 'UTF-8');
 $active_page = 'scheduling';
 
-// Optional: pre-select a date passed via ?date=YYYY-MM-DD
 $preselect_date = '';
 if (!empty($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date'])) {
     $preselect_date = htmlspecialchars($_GET['date']);
@@ -142,9 +141,8 @@ if (!empty($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date']))
             </div>
           </div>
 
-        </div><!-- /cal-col -->
+        </div>
 
-        <!-- RIGHT: Day Detail + Add Form -->
         <div class="detail-panel">
 
           <!-- Day events -->
@@ -217,17 +215,17 @@ if (!empty($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date']))
             </div>
           </div>
 
-        </div><!-- /detail-panel -->
-      </div><!-- /sched-layout -->
+        </div>
+      </div>
 
-    </div><!-- /page-content -->
+    </div>
 
     <footer>
       <span>© 2026 Solar IoT Farm System — Schedule Planner</span>
       <span style="color:var(--green-mid);font-weight:700;"><i class="fas fa-database" style="margin-right:4px;"></i>Tasks saved to database</span>
     </footer>
-  </div><!-- /main -->
-</div><!-- /layout -->
+  </div>
+</div>
 
 <!-- ═══════════════ EDIT MODAL ═══════════════ -->
 <div class="modal-overlay" id="edit-modal" onclick="handleBackdropClick(event)">
@@ -318,7 +316,6 @@ if (!empty($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date']))
 <!-- TOAST -->
 <div id="toast"></div>
 
-<!-- ═══════════════ JAVASCRIPT ═══════════════ -->
 <script>
 /* ── Clock ── */
 function updateClock() {
@@ -339,11 +336,10 @@ function showToast(msg, isError = false) {
   toastTimer = setTimeout(() => { t.className = ''; }, 2800);
 }
 
-/* ── STATE ── */
 const NOW      = new Date();
 const todayKey = fmtKey(NOW.getFullYear(), NOW.getMonth() + 1, NOW.getDate());
 let calDate    = new Date(NOW.getFullYear(), NOW.getMonth(), 1);
-let events     = {};         // { 'YYYY-MM-DD': [{id,type,name,time,zone,notes}…] }
+let events     = {};         
 let selectedDate = null;
 let selectedType = 'irrigation';
 let editType     = 'irrigation';
@@ -351,7 +347,6 @@ let editingKey   = null;
 let editingId    = null;
 let isSaving     = false;
 
-/* ── Type config ── */
 const TC = {
   irrigation:    { color:'var(--water)',     pale:'var(--water-pale)',  icon:'fa-droplet',        pill:'irrigation',    badge:'badge-irr', label:'Irrigation'   },
   fertilization: { color:'var(--solar)',     pale:'var(--solar-pale)',  icon:'fa-flask',           pill:'fertilization', badge:'badge-spr', label:'Fertilization'},
@@ -364,7 +359,6 @@ function fmtKey(y, m, d) {
   return y + '-' + String(m).padStart(2,'0') + '-' + String(d).padStart(2,'0');
 }
 
-/* ══════════ LOAD FROM SERVER ══════════ */
 function loadSchedules(cb) {
   const y = calDate.getFullYear(), m = calDate.getMonth() + 1;
   const lastD = new Date(y, m, 0).getDate();
@@ -374,8 +368,6 @@ function loadSchedules(cb) {
   fetch('get_schedules.php?start=' + start + '&end=' + end)
     .then(r => r.json())
     .then(data => {
-      // Rebuild events map for this month (keep other months intact)
-      // First clear the displayed month's keys
       for (let d = 1; d <= lastD; d++) delete events[fmtKey(y, m, d)];
 
       data.forEach(s => {
@@ -415,14 +407,14 @@ function renderCalendar() {
   const prevDays = new Date(y, mo,     0).getDate();
 
   for (let i = firstDay - 1; i >= 0; i--)
-    renderCell(grid, prevDays - i, fmtKey(y, mo, prevDays - i), true);       // prev month cells
+    renderCell(grid, prevDays - i, fmtKey(y, mo, prevDays - i), true);     
 
   for (let d = 1; d <= daysInM; d++)
-    renderCell(grid, d, fmtKey(y, mo + 1, d), false);                        // current month
+    renderCell(grid, d, fmtKey(y, mo + 1, d), false);                      
 
   const rem = (firstDay + daysInM) % 7;
   if (rem > 0) for (let d = 1; d <= 7 - rem; d++)
-    renderCell(grid, d, fmtKey(y, mo + 2, d), true);                         // next month cells
+    renderCell(grid, d, fmtKey(y, mo + 2, d), true);                        
 }
 
 function renderCell(grid, d, key, otherMonth) {
@@ -511,7 +503,6 @@ function renderDayPanel() {
   });
 }
 
-/* ══════════ UPCOMING ══════════ */
 function renderUpcoming() {
   const list = document.getElementById('upcoming-list');
   const upcoming = [];
@@ -551,7 +542,6 @@ function renderUpcoming() {
   });
 }
 
-/* ══════════ TYPE SELECTORS ══════════ */
 function selectType(type) {
   selectedType = type;
   TYPES.forEach(t => {
@@ -696,7 +686,6 @@ function deleteEvent(key, id) {
     });
 }
 
-/* ══════════ CLEAR FORM ══════════ */
 function clearForm() {
   document.getElementById('task-name').value  = '';
   document.getElementById('task-time').value  = '06:00';
@@ -704,7 +693,6 @@ function clearForm() {
   document.getElementById('task-notes').value = '';
 }
 
-/* ══════════ NAVIGATION ══════════ */
 function changeMonth(delta) {
   calDate.setMonth(calDate.getMonth() + delta);
   loadSchedules();
@@ -775,17 +763,14 @@ function saveEdit() {
     .then(r => r.json())
     .then(data => {
       if (data.success) {
-        // Remove from old date
         if (events[editingKey]) {
           events[editingKey] = events[editingKey].filter(e => e.id !== editingId);
           if (events[editingKey].length === 0) delete events[editingKey];
         }
-        // Add to new date
         if (!events[newDate]) events[newDate] = [];
         events[newDate].push({ id: editingId, type: editType, name, time, zone, notes });
         events[newDate].sort((a, b) => a.time.localeCompare(b.time));
 
-        // If moved to a different month, navigate there
         if (newDate !== editingKey) {
           const [py, pm] = newDate.split('-').map(Number);
           calDate = new Date(py, pm - 1, 1);
@@ -812,7 +797,6 @@ function deleteFromModal() {
   setTimeout(() => confirmDelete(editingKey, editingId, name), 100);
 }
 
-/* ══════════ KEYBOARD ══════════ */
 document.addEventListener('keydown', e => {
   const editModal = document.getElementById('edit-modal');
   const deleteModal = document.getElementById('delete-modal');
@@ -828,21 +812,18 @@ document.addEventListener('keydown', e => {
   }
 });
 
-/* ══════════ SIDEBAR CLOSE ON OUTSIDE CLICK ══════════ */
 document.addEventListener('click', e => {
   const sidebar = document.getElementById('sidebar');
   if (sidebar && !sidebar.contains(e.target) && !e.target.closest('.mobile-toggle'))
     sidebar.classList.remove('open');
 });
 
-/* ══════════ UTILITY ══════════ */
 function escHtml(str) {
   return String(str)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-/* ══════════ INIT ══════════ */
 selectType('irrigation');
 
 const preselectDate = '<?= $preselect_date ?>';

@@ -1,12 +1,7 @@
 <?php
-/**
- * get_schedules.php
- * Returns JSON array of schedule rows between ?start=YYYY-MM-DD and ?end=YYYY-MM-DD
- */
 session_start();
 require_once 'tomato_db.php';
 
-// Auth guard
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['error' => 'Unauthorized']);
@@ -15,7 +10,6 @@ if (!isset($_SESSION['user_id'])) {
 
 header('Content-Type: application/json');
 
-// Validate date params
 $start = $_GET['start'] ?? '';
 $end   = $_GET['end']   ?? '';
 
@@ -25,7 +19,6 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $start) || !preg_match('/^\d{4}-\d{2}-\
 }
 
 try {
-    // Create the table if it doesn't exist yet
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS farm_schedules (
             id            INT AUTO_INCREMENT PRIMARY KEY,

@@ -2,7 +2,6 @@
 session_start();
 require_once 'tomato_db.php';
 
-// Auth guard
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['error' => 'Unauthorized']);
@@ -11,7 +10,6 @@ if (!isset($_SESSION['user_id'])) {
 
 header('Content-Type: application/json');
 
-// Accept JSON body or form-encoded POST
 $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
 if (stripos($contentType, 'application/json') !== false) {
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -22,7 +20,6 @@ if (stripos($contentType, 'application/json') !== false) {
 $action  = trim($input['action'] ?? '');
 $user_id = (int) $_SESSION['user_id'];
 
-/* ──────────── helpers ──────────── */
 function required_str(array $input, string $key, int $maxLen = 200): string {
     $val = trim($input[$key] ?? '');
     return $val === '' ? '' : mb_substr($val, 0, $maxLen);
@@ -32,7 +29,6 @@ function valid_date(string $s): bool { return (bool) preg_match('/^\d{4}-\d{2}-\
 function valid_time(string $s): bool { return (bool) preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $s); }
 function valid_type(string $s): bool { return in_array($s, ['irrigation','fertilization','harvest','maintenance'], true); }
 
-/* ──────────── Ensure table exists ──────────── */
 try {
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS farm_schedules (
@@ -117,7 +113,6 @@ if ($action === 'update') {
     if ($scheduleDate < $today) { echo json_encode(['error' => 'Cannot reschedule to a past date']); exit; }
 
     try {
-        // Only allow editing own rows
         $stmt = $pdo->prepare("
             UPDATE farm_schedules
                SET schedule_date = :date,
@@ -171,6 +166,5 @@ if ($action === 'delete') {
     exit;
 }
 
-/* ════════════ UNKNOWN ACTION ════════════ */
 http_response_code(400);
 echo json_encode(['error' => 'Unknown action: ' . $action]);

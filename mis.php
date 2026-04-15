@@ -15,7 +15,7 @@ if(isset($_POST['action'])){
 
     if($action == 'add'){
         $name     = $_POST['name'];
-        $email    = $_POST['email'];
+        $email    = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
         $uname    = trim($_POST['username']);
         $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
         $stmt = $conn->prepare("INSERT INTO users(name,email,username,password) VALUES(?,?,?,?)");
@@ -26,7 +26,7 @@ if(isset($_POST['action'])){
     } elseif($action == 'edit'){
         $id    = $_POST['id'];
         $name  = $_POST['name'];
-        $email = $_POST['email'];
+        $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
         $uname = trim($_POST['username']);
         if(!empty($_POST['password'])){
             $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
@@ -88,108 +88,92 @@ if(isset($_POST['action'])){
 
   <style>
     @media print {
-      /* ── Page setup: A4 portrait ── */
       @page {
         size: A4 portrait;
-        margin: 15mm 12mm;
+        margin: 0 0 0 0 !important;
       }
 
-      /* ── Blank white sheet ── */
       html, body {
-        margin: 0 !important;
-        padding: 0 !important;
+        margin: 0 0 0 0 !important;
+        padding: 0 0 0 0 !important;
+        height: auto !important;
         background: #fff !important;
+        font-family: 'Segoe UI', Arial, sans-serif !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
 
-      /* ── Hide everything ── */
       body * { visibility: hidden !important; }
 
-      /* ── Reveal the print title and table ── */
-      #print-title,
-      #print-title *,
-      #usersTable,
-      #usersTable * { visibility: visible !important; }
+      #print-wrapper,
+      #print-wrapper * { visibility: visible !important; }
 
-      /* ── Print title block: sits at the very top ── */
-      #print-title {
-        position: absolute !important;
+      #print-wrapper {
+        position: fixed !important;
         top: 0 !important;
         left: 0 !important;
-        width: 100% !important;
-        font-family: Arial, sans-serif !important;
-        margin-bottom: 10px !important;
-        padding-bottom: 8px !important;
-        border-bottom: 2px solid #2d6a4f !important;
-      }
-      #print-title h2 {
-        margin: 0 0 2px 0 !important;
-        font-size: 15pt !important;
-        font-weight: 700 !important;
-        color: #2d6a4f !important;
-        font-family: Arial, sans-serif !important;
-      }
-      #print-title p {
         margin: 0 !important;
-        font-size: 8pt !important;
-        color: #666 !important;
-        font-family: Arial, sans-serif !important;
-      }
-
-      /* ── Table sits just below the title ── */
-      #usersTable {
-        position: absolute !important;
-        top: 52px !important;
-        left: 0 !important;
+        padding: 0 !important;
         width: 100% !important;
-        border-collapse: collapse !important;
-        font-family: Arial, sans-serif !important;
-        font-size: 10pt !important;
+        height: auto !important;
         background: #fff !important;
-        page-break-inside: auto !important;
+        display: block !important;
+        visibility: visible !important;
+        z-index: 9999 !important;
       }
 
-      /* ── Header row ── */
-      #usersTable thead { display: table-header-group !important; }
-      #usersTable thead tr {
-        background: #2d6a4f !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
+      .print-header {
+        text-align: center;
+        padding: 4mm 8mm 2mm 8mm !important;
+        margin: 0 !important;
+        border-bottom: 2px solid #2D8653;
       }
-      #usersTable thead th {
-        color: #fff !important;
-        font-weight: 700 !important;
-        padding: 8px 10px !important;
-        border: 1px solid #1b4332 !important;
-        text-align: left !important;
-      }
+      .print-header h1 { font-size:16pt; font-weight:700; color:#1B5E3B; margin:0; }
+      .print-header p  { font-size:8pt; color:#666; margin:2px 0 0 0; }
 
-      /* Hide sort icons */
-      #usersTable .sort-icon { display: none !important; }
-
-      /* ── Body rows ── */
-      #usersTable tbody tr { page-break-inside: avoid !important; }
-      #usersTable tbody td {
-        padding: 6px 10px !important;
-        border: 1px solid #ccc !important;
-        color: #111 !important;
-        text-align: left !important;
-        vertical-align: middle !important;
+      .print-info {
+        display:flex; justify-content:space-between;
+        padding:1mm 8mm !important; font-size:7pt; color:#888;
       }
 
-      /* ── Zebra striping ── */
-      #usersTable tbody tr:nth-child(even) td {
-        background: #f0faf5 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
+      .print-table-wrap { width:100%; padding:1mm 8mm 4mm 8mm !important; }
+
+      #print-table { width:100%; border-collapse:collapse; font-size:8pt; }
+      #print-table thead tr { background:#2D8653 !important; }
+      #print-table thead th {
+        color:#fff !important; font-weight:600; padding:6px 5px;
+        text-align:left; border:1px solid #1B4332; font-size:7pt;
+        text-transform:uppercase; letter-spacing:0.3px;
+      }
+      #print-table thead th:nth-child(1) { width:30px; text-align:center; }
+      #print-table thead th:nth-child(2) { width:26%; }
+      #print-table thead th:nth-child(3) { width:34%; }
+      #print-table thead th:nth-child(4) { width:20%; }
+      #print-table thead th:nth-child(5) { width:10%; text-align:center; }
+
+      #print-table tbody tr { page-break-inside:avoid; }
+      #print-table tbody tr:nth-child(even) { background:#F5F8F6 !important; }
+      #print-table tbody td {
+        padding:5px 4px; border:1px solid #CCC;
+        color:#333; vertical-align:middle;
+      }
+      #print-table tbody td:nth-child(1) { text-align:center; font-family:monospace; color:#666; }
+      #print-table tbody td:nth-child(2) { font-weight:600; }
+      #print-table tbody td:nth-child(3) { word-break:break-all; }
+      #print-table tbody td:nth-child(4) { font-family:monospace; color:#2D8653; }
+      #print-table tbody td:nth-child(5) { text-align:center; }
+
+      .print-badge {
+        display:inline-block; padding:1px 6px; border-radius:8px;
+        font-size:6pt; font-weight:600;
+        background:#EAF7F0; color:#2D8653; border:1px solid #2D8653;
       }
 
-      /* ── Avatar cell: hide circle, show name text only ── */
-      #usersTable .avatar-cell { display: block !important; }
-      #usersTable .row-avatar  { display: none !important; }
-
-      /* ── Hide the Actions column ── */
-      #usersTable thead th:last-child,
-      #usersTable tbody td:last-child { display: none !important; }
+      .print-footer {
+        margin-top:6px; padding:4mm 8mm !important;
+        border-top:1px solid #CCC; text-align:center;
+        font-size:6pt; color:#999;
+      }
     }
   </style>
 </head>
@@ -265,15 +249,36 @@ if(isset($_POST['action'])){
             </div>
             <div class="toolbar-actions">
               <button class="btn btn-solar btn-sm" onclick="exportCSV()"><i class="fas fa-download"></i> CSV</button>
-              <button class="btn btn-ghost btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+              <button class="btn btn-ghost btn-sm" onclick="preparePrint()"><i class="fas fa-print"></i> Print</button>
               <button class="btn btn-primary" onclick="openAddModal()"><i class="fas fa-user-plus"></i> Add User</button>
             </div>
           </div>
 
-          <!-- PRINT-ONLY TITLE (hidden on screen, visible on print) -->
-          <div id="print-title" style="display:none;">
-            <h2>List of Users</h2>
-            <p>Solar IoT Tomato Cultivation System &mdash; User Accounts</p>
+          <!-- PRINT-ONLY SECTION (hidden on screen) -->
+          <div id="print-wrapper" style="display:none;">
+            <div class="print-header">
+              <h1>👥 User Accounts List</h1>
+              <p>Solar IoT Tomato Cultivation System — User Management</p>
+            </div>
+            <div class="print-info">
+              <span>Generated: <?php echo date('F j, Y \a\t g:i A'); ?></span>
+              <span id="print-user-count">Total Users: 0</span>
+            </div>
+            <div class="print-table-wrap">
+              <table id="print-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Full Name</th>
+                    <th>Email Address</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                  </tr>
+                </thead>
+                <tbody id="print-tbody"></tbody>
+              </table>
+            </div>
+            <div class="print-footer">Solar IoT Tomato Cultivation System — Page 1</div>
           </div>
 
           <!-- TABLE -->
@@ -311,7 +316,7 @@ if(isset($_POST['action'])){
         </div>
       </div>
 
-    </div>
+    </div><!-- /.page-content -->
 
     <!-- FOOTER -->
     <footer class="footer">
@@ -351,13 +356,13 @@ if(isset($_POST['action'])){
   </div>
 </div>
 
-<!-- ADD USER MODAL -->
 <div class="modal-overlay" id="addModal">
   <div class="modal-box">
     <div class="modal-head">
       <div class="modal-head-title"><i class="fas fa-user-plus"></i> Add New User</div>
-      <button class="modal-close" onclick="closeModal('addModal')"><i class="fas fa-times"></i></button>
+      <button class="modal-close" onclick="closeModal('addModal')" aria-label="Close"><i class="fas fa-times"></i></button>
     </div>
+
     <div class="modal-body">
       <div class="form-row">
         <div class="form-group">
@@ -369,16 +374,24 @@ if(isset($_POST['action'])){
           <input type="text" class="form-input" id="add_username" placeholder="e.g. juan_dc" required />
         </div>
       </div>
+
       <div class="form-group">
         <label class="form-label"><i class="fas fa-envelope"></i>Email Address</label>
         <input type="email" class="form-input" id="add_email" placeholder="e.g. juan@farm.com" required />
       </div>
+
       <div class="form-group">
         <label class="form-label"><i class="fas fa-lock"></i>Password</label>
-        <input type="password" class="form-input" id="add_password" placeholder="Enter a strong password" required />
+        <div class="password-wrapper">
+          <input type="password" class="form-input" id="add_password" placeholder="Enter a strong password" required />
+          <button type="button" class="password-toggle" onclick="togglePassword('add_password', this)" aria-label="Toggle password visibility">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
         <div class="form-hint">Minimum 8 characters recommended.</div>
       </div>
     </div>
+
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('addModal')"><i class="fas fa-times"></i> Cancel</button>
       <button class="btn btn-primary" onclick="submitAdd()"><i class="fas fa-save"></i> Create User</button>
@@ -386,13 +399,16 @@ if(isset($_POST['action'])){
   </div>
 </div>
 
-<!-- EDIT USER MODAL -->
+<!-- ══════════════════════════════════════════
+     EDIT USER MODAL
+═══════════════════════════════════════════ -->
 <div class="modal-overlay" id="editModal">
   <div class="modal-box">
     <div class="modal-head">
       <div class="modal-head-title"><i class="fas fa-user-edit"></i> Edit User</div>
-      <button class="modal-close" onclick="closeModal('editModal')"><i class="fas fa-times"></i></button>
+      <button class="modal-close" onclick="closeModal('editModal')" aria-label="Close"><i class="fas fa-times"></i></button>
     </div>
+
     <div class="modal-body">
       <input type="hidden" id="edit_id" />
       <div class="form-row">
@@ -405,16 +421,24 @@ if(isset($_POST['action'])){
           <input type="text" class="form-input" id="edit_username" placeholder="Username" required />
         </div>
       </div>
+
       <div class="form-group">
         <label class="form-label"><i class="fas fa-envelope"></i>Email Address</label>
         <input type="email" class="form-input" id="edit_email" placeholder="Email address" required />
       </div>
+
       <div class="form-group">
         <label class="form-label"><i class="fas fa-lock"></i>New Password</label>
-        <input type="password" class="form-input" id="edit_password" placeholder="Leave blank to keep current" />
+        <div class="password-wrapper">
+          <input type="password" class="form-input" id="edit_password" placeholder="Leave blank to keep current" />
+          <button type="button" class="password-toggle" onclick="togglePassword('edit_password', this)" aria-label="Toggle password visibility">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
         <div class="form-hint">Only fill this if you want to change the password.</div>
       </div>
     </div>
+
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('editModal')"><i class="fas fa-times"></i> Cancel</button>
       <button class="btn btn-primary" onclick="submitEdit()"><i class="fas fa-save"></i> Save Changes</button>
@@ -422,7 +446,9 @@ if(isset($_POST['action'])){
   </div>
 </div>
 
-<!-- DELETE CONFIRM -->
+<!-- ══════════════════════════════════════════
+     DELETE CONFIRM
+═══════════════════════════════════════════ -->
 <div class="delete-overlay" id="deleteOverlay">
   <div class="delete-box">
     <div class="delete-icon"><i class="fas fa-trash-can"></i></div>
@@ -518,7 +544,7 @@ if(isset($_POST['action'])){
   }
 
   function renderPagination(totalPages, current, totalRows){
-    const offset = (current - 1) * limit;
+    const offset  = (current - 1) * limit;
     const showing = Math.min(offset + limit, totalRows);
     document.getElementById('pagination-info').textContent =
       `Showing ${offset + 1}–${showing} of ${totalRows} users`;
@@ -560,10 +586,9 @@ if(isset($_POST['action'])){
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => {
         currentSearch = el.value.trim();
-        currentPage = 1;
-        
-        document.getElementById('searchInput').value = currentSearch;
-        document.getElementById('topbarSearch').value = currentSearch;
+        currentPage   = 1;
+        document.getElementById('searchInput').value   = currentSearch;
+        document.getElementById('topbarSearch').value  = currentSearch;
         fetchUsers();
       }, 300);
     });
@@ -573,15 +598,20 @@ if(isset($_POST['action'])){
 
   /* ── ADD MODAL ── */
   function openAddModal(){
-    document.getElementById('add_name').value = '';
-    document.getElementById('add_email').value = '';
+    document.getElementById('add_name').value     = '';
+    document.getElementById('add_email').value    = '';
     document.getElementById('add_username').value = '';
     document.getElementById('add_password').value = '';
+    /* reset toggle icon */
+    const pw  = document.getElementById('add_password');
+    const btn = pw.closest('.password-wrapper').querySelector('.password-toggle i');
+    pw.type = 'password';
+    btn.className = 'fas fa-eye';
     openModal('addModal');
   }
   function submitAdd(){
-    const name = document.getElementById('add_name').value.trim();
-    const email = document.getElementById('add_email').value.trim();
+    const name     = document.getElementById('add_name').value.trim();
+    const email    = document.getElementById('add_email').value.trim();
     const username = document.getElementById('add_username').value.trim();
     const password = document.getElementById('add_password').value;
     if(!name || !email || !username || !password){ showToast('Please fill in all fields.','error'); return; }
@@ -594,17 +624,22 @@ if(isset($_POST['action'])){
 
   /* ── EDIT MODAL ── */
   function openEditModal(id, name, email, username){
-    document.getElementById('edit_id').value = id;
-    document.getElementById('edit_name').value = name;
-    document.getElementById('edit_email').value = email;
+    document.getElementById('edit_id').value       = id;
+    document.getElementById('edit_name').value     = name;
+    document.getElementById('edit_email').value    = email;
     document.getElementById('edit_username').value = username;
     document.getElementById('edit_password').value = '';
+    /* reset toggle icon */
+    const pw  = document.getElementById('edit_password');
+    const btn = pw.closest('.password-wrapper').querySelector('.password-toggle i');
+    pw.type = 'password';
+    btn.className = 'fas fa-eye';
     openModal('editModal');
   }
   function submitEdit(){
-    const id = document.getElementById('edit_id').value;
-    const name = document.getElementById('edit_name').value.trim();
-    const email = document.getElementById('edit_email').value.trim();
+    const id       = document.getElementById('edit_id').value;
+    const name     = document.getElementById('edit_name').value.trim();
+    const email    = document.getElementById('edit_email').value.trim();
     const username = document.getElementById('edit_username').value.trim();
     const password = document.getElementById('edit_password').value;
     if(!name || !email || !username){ showToast('Please fill in required fields.','error'); return; }
@@ -634,8 +669,10 @@ if(isset($_POST['action'])){
       .catch(() => showToast('Error deleting user.','error'));
   }
 
-  function openModal(id){ document.getElementById(id).classList.add('open'); }
+  /* ── MODAL HELPERS ── */
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
   function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
   document.querySelectorAll('.modal-overlay').forEach(o => {
     o.addEventListener('click', e => { if(e.target === o) o.classList.remove('open'); });
   });
@@ -643,15 +680,17 @@ if(isset($_POST['action'])){
     if(e.target === document.getElementById('deleteOverlay')) closeDeleteModal();
   });
 
+  /* ── TOAST ── */
   function showToast(msg, type='success'){
     const wrap = document.getElementById('toastWrap');
-    const t = document.createElement('div');
+    const t    = document.createElement('div');
     t.className = `toast ${type}`;
     t.innerHTML = `<i class="fas fa-${type==='success'?'circle-check':'circle-exclamation'}"></i> ${msg}`;
     wrap.appendChild(t);
     setTimeout(() => t.remove(), 3500);
   }
 
+  /* ── CSV EXPORT ── */
   function exportCSV(){
     const rows = [['ID','Name','Email','Username']];
     document.querySelectorAll('#usersBody tr').forEach(tr => {
@@ -666,16 +705,60 @@ if(isset($_POST['action'])){
       }
     });
     const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
-    const a = document.createElement('a');
-    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    const a   = document.createElement('a');
+    a.href     = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
     a.download = 'users_' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
     showToast('CSV exported!','success');
   }
 
+  /* ── ESCAPE HELPERS ── */
   function escHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
   function escAttr(s){ return (s||'').replace(/'/g,"&#39;").replace(/"/g,"&quot;"); }
 
+  /* ── PASSWORD TOGGLE ── */
+  function togglePassword(inputId, btn){
+    const input = document.getElementById(inputId);
+    const icon  = btn.querySelector('i');
+    if(input.type === 'password'){
+      input.type    = 'text';
+      icon.className = 'fas fa-eye-slash';
+    } else {
+      input.type    = 'password';
+      icon.className = 'fas fa-eye';
+    }
+  }
+
+  /* ── PRINT ── */
+  function preparePrint(){
+    const body = new URLSearchParams({
+      action:'fetch', search:'', page:1,
+      limit:1000, sort_column:'name', sort_order:'asc'
+    });
+    fetch('', { method:'POST', body })
+      .then(r => r.json())
+      .then(res => {
+        const tbody = document.getElementById('print-tbody');
+        if(!res.users || res.users.length === 0){
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">No users found</td></tr>';
+        } else {
+          tbody.innerHTML = res.users.map(u => `
+            <tr>
+              <td>${u.id}</td>
+              <td>${escHtml(u.name)}</td>
+              <td>${escHtml(u.email)}</td>
+              <td>@${escHtml(u.username)}</td>
+              <td><span class="print-badge">User</span></td>
+            </tr>
+          `).join('');
+        }
+        document.getElementById('print-user-count').textContent = 'Total Users: ' + res.totalRows;
+        window.print();
+      })
+      .catch(() => showToast('Error preparing print data','error'));
+  }
+
+  /* ── INIT ── */
   fetchUsers();
 </script>
 </body>

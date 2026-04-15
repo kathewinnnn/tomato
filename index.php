@@ -140,7 +140,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
     <div class="page-view <?= ($active_page === 'dashboard') ? 'active' : '' ?>" id="view-dashboard">
       <div class="page-content">
 
-        <!-- HERO -->
         <div class="hero" style="margin-bottom:28px;">
           <div class="hero-tomato">🍅</div>
           <div class="hero-tag">Tomato Cultivation — Farm</div>
@@ -175,7 +174,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
         </div>
         <?php endif; ?>
 
-        <!-- KEY METRICS -->
         <div class="page-section">
           <div class="section-head">
             <div class="section-icon solar"><i class="fas fa-chart-line"></i></div>
@@ -218,7 +216,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
           </div>
         </div>
 
-        <!-- SYSTEM STATUS + QUICK LINKS -->
         <div class="page-section">
           <div class="grid-3">
 
@@ -378,11 +375,9 @@ if ($legend_result && $legend_result->num_rows > 0) {
                   document.getElementById('recent-activity-body').innerHTML = '<div class="empty-state"><i class="fas fa-triangle-exclamation" style="color:var(--solar);font-size:2rem;margin-bottom:12px;"></i><p>Failed to load activities.</p></div>';
                 });
             }
-            // Load on dashboard view
             if (document.getElementById('view-dashboard') && document.getElementById('view-dashboard').classList.contains('active')) {
               loadRecentActivities();
             }
-            // Reload if switching to dashboard
             document.addEventListener('DOMContentLoaded', () => {
               const observer = new MutationObserver(() => {
                 if (document.getElementById('view-dashboard')?.classList.contains('active')) {
@@ -486,7 +481,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
           </div>
         </div>
 
-        <!-- ZONE OVERVIEW -->
         <div class="page-section">
           <div class="section-head">
             <div class="section-icon water"><i class="fas fa-map-location-dot"></i></div>
@@ -673,7 +667,7 @@ if ($legend_result && $legend_result->num_rows > 0) {
 
             <div class="gsm-right-col">
 
-              <!-- TODAY'S SMS STATS — counts start at 0, loaded dynamically from DB -->
+              <!-- TODAY'S SMS STATS -->
               <div class="card">
                 <div class="card-head">
                   <div class="card-head-label"><i class="fas fa-chart-bar"></i> Today's SMS Stats</div>
@@ -704,7 +698,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
                   <span class="badge badge-blue">Last 24h</span>
                 </div>
                 <div class="card-body" id="gsm-sent-log">
-                  <!-- Populated by loadGsmMessages() -->
                 </div>
               </div>
 
@@ -749,7 +742,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
   </div>
 </div>
 
-<!-- GSM Toast notification -->
 <div class="gsm-toast" id="gsm-toast">
   <i class="fas fa-check-circle"></i>
   <span id="gsm-toast-msg">SMS sent successfully!</span>
@@ -767,7 +759,7 @@ if ($legend_result && $legend_result->num_rows > 0) {
 
   // ── Mini calendar ──
   let dashCalDate = new Date();
-  dashCalDate.setDate(1); // Start of current month
+  dashCalDate.setDate(1);
   function dashChangeMonth(d) { dashCalDate.setMonth(dashCalDate.getMonth() + d); generateDashCal(); }
   function generateDashCal() {
     const grid = document.getElementById('dash-cal-grid');
@@ -783,20 +775,16 @@ if ($legend_result && $legend_result->num_rows > 0) {
     const currentMonth = dashCalDate.getMonth();
     const currentYear = dashCalDate.getFullYear();
     
-    // Get first day of month (0 = Sunday, 1 = Monday, etc.) and days in month
     const firstDay = new Date(currentYear, currentMonth, 1).getDay();
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     
-    // Get days in previous month
     const prevMonth = new Date(currentYear, currentMonth, 0);
     const daysInPrevMonth = prevMonth.getDate();
     
-    // Build month string for API
     const monthStr = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
     const endDay = new Date(currentYear, currentMonth + 1, 0).getDate();
     const endStr = monthStr + '-' + String(endDay).padStart(2, '0');
     
-    // Fetch schedules for this month
     fetch('get_schedules.php?start=' + monthStr + '-01&end=' + endStr)
       .then(r => r.json())
       .then(schedules => {
@@ -813,7 +801,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
           else if (s.task_type === 'maintenance') maintenanceDays.add(day);
         });
         
-        // Empty cells before day 1 (if the 1st is not Sunday)
         for (let i = 0; i < firstDay; i++) {
           const el = document.createElement('div');
           el.className = 'cal-day';
@@ -822,7 +809,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
           grid.appendChild(el);
         }
         
-        // Current month days (1 to daysInMonth)
         for (let d = 1; d <= daysInMonth; d++) {
           const el = document.createElement('div');
           el.className = 'cal-day';
@@ -841,8 +827,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
         }
       })
       .catch(() => {
-        // Fallback: render without schedule markers
-        // Empty cells before day 1
         for (let i = 0; i < firstDay; i++) {
           const el = document.createElement('div');
           el.className = 'cal-day';
@@ -867,7 +851,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
   }
   generateDashCal();
 
-  // ── Mobile sidebar ──
   document.addEventListener('click', e => {
     const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.contains(e.target) && !e.target.closest('.mobile-toggle')) {
@@ -875,7 +858,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
     }
   });
 
-  // ── GSM Mode switching ──
   let gsmCurrentMode = 'saved';
 
   function gsmSetMode(mode) {
@@ -996,7 +978,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
       </div>
     `;
 
-    // Wire up expand / collapse on the short message preview
     const msgEl   = item.querySelector('.gsm-log-msg');
     const panel   = item.querySelector('.gsm-expand-panel');
     msgEl.addEventListener('click', function () {
@@ -1022,8 +1003,7 @@ if ($legend_result && $legend_result->num_rows > 0) {
         const log = document.getElementById('gsm-sent-log');
         if (!log || !messages || messages.length === 0) return;
 
-        // Determine today's local date string "YYYY-MM-DD"
-        const todayStr = new Date().toLocaleDateString('en-CA'); // en-CA gives YYYY-MM-DD
+        const todayStr = new Date().toLocaleDateString('en-CA'); 
         let todayCount = 0;
 
         messages.forEach(m => {
@@ -1036,14 +1016,11 @@ if ($legend_result && $legend_result->num_rows > 0) {
           log.appendChild(item);
         });
 
-        // Update stat counters with today's real count
         document.getElementById('gsm-sent-count').textContent      = todayCount;
         document.getElementById('gsm-delivered-count').textContent  = todayCount;
         
-        // Update sidebar badge
         const sidebarBadge = document.getElementById('sidebar-gsm-badge');
         if (sidebarBadge) sidebarBadge.textContent = todayCount;
-        // Failed stays 0 unless your DB tracks failures
       })
       .catch(err => console.error('Failed to load GSM messages:', err));
   }
@@ -1066,7 +1043,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
   const id   = item.dataset.id;
 
   if (!id) {
-    // Message hasn't been saved to DB yet (send still in flight) — just remove from UI
     item.style.transition = 'opacity 0.25s, transform 0.25s';
     item.style.opacity    = '0';
     item.style.transform  = 'translateX(20px)';
@@ -1075,7 +1051,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
     return;
   }
 
-  // Disable button to prevent double-click
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
@@ -1087,7 +1062,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
   .then(r => r.json())
   .then(data => {
     if (data.ok) {
-      // Animate out only after confirmed DB deletion
       item.style.transition = 'opacity 0.25s, transform 0.25s';
       item.style.opacity    = '0';
       item.style.transform  = 'translateX(20px)';
@@ -1098,7 +1072,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
       sentEl.textContent  = Math.max(0, parseInt(sentEl.textContent)  - 1);
       delivEl.textContent = Math.max(0, parseInt(delivEl.textContent) - 1);
 
-      // Update sidebar badge
       const sidebarBadge = document.getElementById('sidebar-gsm-badge');
       if (sidebarBadge) sidebarBadge.textContent = sentEl.textContent;
 
@@ -1142,13 +1115,11 @@ if ($legend_result && $legend_result->num_rows > 0) {
   .then(res => res.json())
   .then(data => {
     if (data.ok) {
-      // Update the visible short preview
       const truncated = edited.length > 48 ? edited.substring(0, 48) + '…' : edited;
       const msgEl     = item.querySelector('.gsm-log-msg');
       msgEl.textContent = truncated;
       msgEl.title       = 'Click to expand';
 
-      // Sync the textarea so re-opening the panel shows the new text
       panel.querySelector('.gsm-edit-area').value = edited;
       panel.style.display = 'none';
 
@@ -1190,8 +1161,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
       text.split(/[\s,;]+/).forEach(n => { if (n.trim()) gsmAddTag(n); });
     });
   });
-
-  // ── GSM utility functions ──
 
   function gsmSetMsg(text) {
     const ta = document.getElementById('gsm-msg');
@@ -1242,7 +1211,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
       const isBroadcast = gsmCurrentMode === 'broadcast';
       const time        = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
 
-      // Build and prepend the log item
       const log  = document.getElementById('gsm-sent-log');
       const item = buildLogItem(null, recipientLabel, msg, time, isBroadcast);
       item.style.cssText = 'opacity:0;transform:translateY(-8px);transition:opacity 0.3s,transform 0.3s;';
@@ -1252,17 +1220,14 @@ if ($legend_result && $legend_result->num_rows > 0) {
         item.style.transform = 'none';
       });
 
-      // Increment today's stat counters
       const sentEl  = document.getElementById('gsm-sent-count');
       const delivEl = document.getElementById('gsm-delivered-count');
       sentEl.textContent  = parseInt(sentEl.textContent)  + recipientCount;
       delivEl.textContent = parseInt(delivEl.textContent) + recipientCount;
 
-      // Update sidebar badge if present
       const sidebarBadge = document.getElementById('sidebar-gsm-badge');
       if (sidebarBadge) sidebarBadge.textContent = sentEl.textContent;
 
-      // Persist to DB — when the response returns the new id, stamp it on the item
       fetch('save_gsm.php', {
         method : 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1274,7 +1239,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
       })
       .catch(() => {});
 
-      // Clear composer
       msgEl.value = '';
       document.getElementById('gsm-char-count').textContent = '0 / 160 chars · 1 SMS';
 
@@ -1285,7 +1249,6 @@ if ($legend_result && $legend_result->num_rows > 0) {
         document.getElementById('gsm-tag-input').placeholder = '+63917… then press Enter or comma';
       }
 
-      // Reset button
       btn.classList.remove('sending', 'broadcast-mode');
       if (gsmCurrentMode === 'broadcast') {
         btn.classList.add('broadcast-mode');
