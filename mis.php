@@ -86,6 +86,10 @@ if(isset($_POST['action'])){
   <link rel="stylesheet" href="css/mis.css">
   <script src="notifications.js"></script>
 
+  <!-- jsPDF + autoTable for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
   <style>
     @media print {
       @page {
@@ -249,6 +253,7 @@ if(isset($_POST['action'])){
             </div>
             <div class="toolbar-actions">
               <button class="btn btn-solar btn-sm" onclick="exportCSV()"><i class="fas fa-download"></i> CSV</button>
+              <button class="btn btn-danger btn-sm" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
               <button class="btn btn-ghost btn-sm" onclick="preparePrint()"><i class="fas fa-print"></i> Print</button>
               <button class="btn btn-primary" onclick="openAddModal()"><i class="fas fa-user-plus"></i> Add User</button>
             </div>
@@ -356,6 +361,7 @@ if(isset($_POST['action'])){
   </div>
 </div>
 
+<!-- ADD USER MODAL -->
 <div class="modal-overlay" id="addModal">
   <div class="modal-box">
     <div class="modal-head">
@@ -371,13 +377,13 @@ if(isset($_POST['action'])){
         </div>
         <div class="form-group">
           <label class="form-label"><i class="fas fa-user"></i>Username</label>
-          <input type="text" class="form-input" id="add_username" placeholder="e.g. juan_dc" required />
+          <input type="text" class="form-input" id="add_username" placeholder="e.g. your_un" required />
         </div>
       </div>
 
       <div class="form-group">
         <label class="form-label"><i class="fas fa-envelope"></i>Email Address</label>
-        <input type="email" class="form-input" id="add_email" placeholder="e.g. juan@farm.com" required />
+        <input type="email" class="form-input" id="add_email" placeholder="e.g. you@farm.com" required />
       </div>
 
       <div class="form-group">
@@ -399,9 +405,7 @@ if(isset($_POST['action'])){
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     EDIT USER MODAL
-═══════════════════════════════════════════ -->
+<!-- EDIT USER MODAL -->
 <div class="modal-overlay" id="editModal">
   <div class="modal-box">
     <div class="modal-head">
@@ -446,9 +450,7 @@ if(isset($_POST['action'])){
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     DELETE CONFIRM
-═══════════════════════════════════════════ -->
+<!-- DELETE CONFIRM -->
 <div class="delete-overlay" id="deleteOverlay">
   <div class="delete-box">
     <div class="delete-icon"><i class="fas fa-trash-can"></i></div>
@@ -602,12 +604,16 @@ if(isset($_POST['action'])){
     document.getElementById('add_email').value    = '';
     document.getElementById('add_username').value = '';
     document.getElementById('add_password').value = '';
-    /* reset toggle icon */
+
     const pw  = document.getElementById('add_password');
     const btn = pw.closest('.password-wrapper').querySelector('.password-toggle i');
     pw.type = 'password';
     btn.className = 'fas fa-eye';
     openModal('addModal');
+  }
+  function isValidEmail(email){
+    const re = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    return re.test(email);
   }
   function submitAdd(){
     const name     = document.getElementById('add_name').value.trim();
@@ -615,6 +621,7 @@ if(isset($_POST['action'])){
     const username = document.getElementById('add_username').value.trim();
     const password = document.getElementById('add_password').value;
     if(!name || !email || !username || !password){ showToast('Please fill in all fields.','error'); return; }
+    if(!isValidEmail(email)){ showToast('Please enter a valid gmail.com email address.','error'); return; }
     const body = new URLSearchParams({action:'add', name, email, username, password});
     fetch('', { method:'POST', body })
       .then(r => r.text())
@@ -629,7 +636,6 @@ if(isset($_POST['action'])){
     document.getElementById('edit_email').value    = email;
     document.getElementById('edit_username').value = username;
     document.getElementById('edit_password').value = '';
-    /* reset toggle icon */
     const pw  = document.getElementById('edit_password');
     const btn = pw.closest('.password-wrapper').querySelector('.password-toggle i');
     pw.type = 'password';
@@ -643,6 +649,7 @@ if(isset($_POST['action'])){
     const username = document.getElementById('edit_username').value.trim();
     const password = document.getElementById('edit_password').value;
     if(!name || !email || !username){ showToast('Please fill in required fields.','error'); return; }
+    if(!isValidEmail(email)){ showToast('Please enter a valid gmail.com email address.','error'); return; }
     const body = new URLSearchParams({action:'edit', id, name, email, username, password});
     fetch('', { method:'POST', body })
       .then(r => r.text())
@@ -710,6 +717,95 @@ if(isset($_POST['action'])){
     a.download = 'users_' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
     showToast('CSV exported!','success');
+  }
+
+  /* ── PDF EXPORT ── */
+  function exportPDF(){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const now = new Date();
+
+    // Green header bar
+    doc.setFillColor(45, 134, 83);
+    doc.rect(0, 0, 210, 24, 'F');
+
+    // Title
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(15);
+    doc.setFont('helvetica', 'bold');
+    doc.text('User Accounts List', 14, 11);
+
+    // Subtitle
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Solar IoT Tomato Cultivation System — User Management', 14, 18);
+
+    // Date (right-aligned)
+    const dateStr = now.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+    doc.text('Generated: ' + dateStr, 196, 18, { align: 'right' });
+
+    // Fetch ALL users (limit 1000) for the export
+    const body = new URLSearchParams({
+      action: 'fetch', search: '', page: 1,
+      limit: 1000, sort_column: 'name', sort_order: 'asc'
+    });
+
+    fetch('', { method: 'POST', body })
+      .then(r => r.json())
+      .then(res => {
+        const rows = (res.users || []).map(u => [
+          '#' + u.id,
+          u.name   || '',
+          u.email  || '',
+          '@' + u.username,
+          'User'
+        ]);
+
+        doc.autoTable({
+          startY: 30,
+          head: [['ID', 'Full Name', 'Email Address', 'Username', 'Role']],
+          body: rows,
+          styles: {
+            fontSize: 9,
+            cellPadding: 4,
+            font: 'helvetica',
+            textColor: [40, 40, 40]
+          },
+          headStyles: {
+            fillColor: [45, 134, 83],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            halign: 'left',
+            fontSize: 9
+          },
+          alternateRowStyles: {
+            fillColor: [245, 248, 246]
+          },
+          columnStyles: {
+            0: { cellWidth: 16, halign: 'center', textColor: [130, 130, 130], fontStyle: 'normal' },
+            1: { fontStyle: 'bold' },
+            2: { textColor: [80, 80, 80] },
+            3: { textColor: [45, 134, 83] },
+            4: { halign: 'center', textColor: [45, 134, 83], fontStyle: 'bold' }
+          },
+          margin: { left: 14, right: 14 },
+          didDrawPage: function(data) {
+            // Footer on every page
+            const pageCount = doc.internal.getNumberOfPages();
+            doc.setFontSize(7);
+            doc.setTextColor(160, 160, 160);
+            doc.setFont('helvetica', 'normal');
+            doc.text(
+              'Solar IoT Tomato Cultivation System  •  Page ' + data.pageNumber + ' of ' + pageCount,
+              105, 290, { align: 'center' }
+            );
+          }
+        });
+
+        doc.save('users_' + now.toISOString().slice(0, 10) + '.pdf');
+        showToast('PDF exported successfully!', 'success');
+      })
+      .catch(() => showToast('Error generating PDF.', 'error'));
   }
 
   /* ── ESCAPE HELPERS ── */

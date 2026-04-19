@@ -30,48 +30,90 @@ if (!empty($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date']))
   <link rel="stylesheet" href="css/schedule.css"/>
 
   <style>
-    /* ── TYPE SELECTOR ── */
-    .type-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-    .type-btn:hover               { border-color: var(--green-mid); color: var(--green-mid); background: var(--green-pale); }
-    .type-btn.selected-irrigation { background: var(--water-pale);  color: var(--water);     border-color: var(--water); }
-    .type-btn.selected-fertilization{background: var(--solar-pale); color: var(--solar);    border-color: var(--solar); }
-    .type-btn.selected-harvest    { background: var(--red-pale);    color: var(--red);       border-color: var(--red); }
-    .type-btn.selected-maintenance{ background: var(--green-pale);  color: var(--green-mid); border-color: var(--green-mid); }
+    /* ── TYPE GRID ── */
+    .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .type-btn {
+      position: relative;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 8px; padding: 14px 8px 13px;
+      border-radius: var(--radius-md); border: 2px solid var(--border);
+      background: #fff; cursor: pointer; font-family: var(--font-body);
+      font-size: .75rem; font-weight: 700; color: var(--text-muted);
+      transition: all .18s cubic-bezier(.4,0,.2,1); user-select: none;
+    }
+    .type-btn:hover {
+      border-color: var(--hc); color: var(--hc); background: var(--hp);
+      transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,.08);
+    }
+    .type-btn:active { transform: translateY(0); box-shadow: none; }
+
+    .tb-icon {
+      width: 40px; height: 40px; border-radius: 11px;
+      background: var(--border); display: flex; align-items: center;
+      justify-content: center; font-size: 16px; color: var(--text-muted);
+      transition: background .18s, color .18s, transform .18s;
+    }
+    .type-btn:hover .tb-icon { background: var(--hp); color: var(--hc); transform: scale(1.08); }
+    .tb-label { font-size: .73rem; font-weight: 700; line-height: 1; }
+    .tb-check {
+      position: absolute; top: 7px; right: 7px;
+      width: 17px; height: 17px; border-radius: 50%;
+      border: 2px solid var(--border); background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8px; color: transparent; transition: all .18s;
+    }
+
+    /* Selected states */
+    .type-btn.sel-irr { border-color: var(--water); background: var(--water-pale); }
+    .type-btn.sel-irr .tb-icon  { background: rgba(21,117,168,.14); color: var(--water); }
+    .type-btn.sel-irr .tb-label { color: var(--water); }
+    .type-btn.sel-irr .tb-check { border-color: var(--water); background: var(--water); color: #fff; }
+
+    .type-btn.sel-frt { border-color: var(--solar); background: var(--solar-pale); }
+    .type-btn.sel-frt .tb-icon  { background: rgba(184,125,0,.14); color: var(--solar); }
+    .type-btn.sel-frt .tb-label { color: var(--solar); }
+    .type-btn.sel-frt .tb-check { border-color: var(--solar); background: var(--solar); color: #fff; }
+
+    .type-btn.sel-har { border-color: var(--red); background: var(--red-pale); }
+    .type-btn.sel-har .tb-icon  { background: rgba(214,48,49,.14); color: var(--red); }
+    .type-btn.sel-har .tb-label { color: var(--red); }
+    .type-btn.sel-har .tb-check { border-color: var(--red); background: var(--red); color: #fff; }
+
+    .type-btn.sel-mnt { border-color: var(--green-mid); background: var(--green-pale); }
+    .type-btn.sel-mnt .tb-icon  { background: rgba(45,134,83,.14); color: var(--green-mid); }
+    .type-btn.sel-mnt .tb-label { color: var(--green-mid); }
+    .type-btn.sel-mnt .tb-check { border-color: var(--green-mid); background: var(--green-mid); color: #fff; }
+
+    /* ── LOCATION DISPLAY (read-only, Farm only) ── */
+    .location-display {
+      display: flex; align-items: center; gap: 8px;
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      padding: 8px 11px; background: var(--sand);
+      font-size: .84rem; color: var(--text-muted); font-weight: 600;
+    }
+    .location-display i { color: var(--green-mid); font-size: .85rem; }
 
     /* ── TOAST ── */
     #toast {
-      position: fixed;
-      bottom: 28px;
-      left: 50%;
+      position: fixed; bottom: 28px; left: 50%;
       transform: translateX(-50%) translateY(20px);
-      background: var(--green-dark);
-      color: #fff;
-      padding: 10px 22px;
-      border-radius: 30px;
-      font-size: .82rem;
-      font-weight: 600;
-      box-shadow: var(--shadow-md);
-      z-index: 9999;
-      opacity: 0;
-      transition: opacity .25s, transform .25s;
-      white-space: nowrap;
+      background: var(--green-dark); color: #fff;
+      padding: 10px 22px; border-radius: 30px;
+      font-size: .82rem; font-weight: 600;
+      box-shadow: var(--shadow-md); z-index: 9999;
+      opacity: 0; transition: opacity .25s, transform .25s; white-space: nowrap;
     }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast.error { background: var(--red); }
 
     /* ── FOOTER ── */
     footer {
-      background: var(--card);
-      border-top: 1px solid var(--border);
-      padding: 16px 32px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: .73rem;
-      color: var(--text-muted);
+      background: var(--card); border-top: 1px solid var(--border);
+      padding: 16px 32px; display: flex; align-items: center;
+      justify-content: space-between; font-size: .73rem; color: var(--text-muted);
     }
-</style>
-
+  </style>
 </head>
 <body>
 <div class="layout">
@@ -143,6 +185,7 @@ if (!empty($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date']))
 
         </div>
 
+        <!-- RIGHT: Detail Panel -->
         <div class="detail-panel">
 
           <!-- Day events -->
@@ -175,42 +218,72 @@ if (!empty($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date']))
               </div>
             </div>
             <div class="detail-body">
+
+              <!-- Task Type -->
               <div class="form-group">
                 <label class="form-label">Task Type</label>
-                <div class="type-selector">
-                  <button type="button" class="type-btn" onclick="selectType('irrigation')"    id="type-irrigation">   <i class="fas fa-droplet"></i> Irrigation</button>
-                  <button type="button" class="type-btn" onclick="selectType('fertilization')" id="type-fertilization"><i class="fas fa-flask"></i> Fertilization</button>
-                  <button type="button" class="type-btn" onclick="selectType('harvest')"       id="type-harvest">      <i class="fas fa-basket-shopping"></i> Harvest</button>
-                  <button type="button" class="type-btn" onclick="selectType('maintenance')"   id="type-maintenance">  <i class="fas fa-wrench"></i> Maintenance</button>
+                <div class="type-grid" id="add-type-grid">
+                  <button type="button" class="type-btn sel-irr" id="type-irrigation"
+                    data-sel="sel-irr" style="--hc:var(--water);--hp:var(--water-pale);"
+                    onclick="selectType(this)">
+                    <span class="tb-check"><i class="fas fa-check"></i></span>
+                    <span class="tb-icon"><i class="fas fa-droplet"></i></span>
+                    <span class="tb-label">Irrigation</span>
+                  </button>
+                  <button type="button" class="type-btn" id="type-fertilization"
+                    data-sel="sel-frt" style="--hc:var(--solar);--hp:var(--solar-pale);"
+                    onclick="selectType(this)">
+                    <span class="tb-check"><i class="fas fa-check"></i></span>
+                    <span class="tb-icon"><i class="fas fa-flask"></i></span>
+                    <span class="tb-label">Fertilization</span>
+                  </button>
+                  <button type="button" class="type-btn" id="type-harvest"
+                    data-sel="sel-har" style="--hc:var(--red);--hp:var(--red-pale);"
+                    onclick="selectType(this)">
+                    <span class="tb-check"><i class="fas fa-check"></i></span>
+                    <span class="tb-icon"><i class="fas fa-basket-shopping"></i></span>
+                    <span class="tb-label">Harvest</span>
+                  </button>
+                  <button type="button" class="type-btn" id="type-maintenance"
+                    data-sel="sel-mnt" style="--hc:var(--green-mid);--hp:var(--green-pale);"
+                    onclick="selectType(this)">
+                    <span class="tb-check"><i class="fas fa-check"></i></span>
+                    <span class="tb-icon"><i class="fas fa-wrench"></i></span>
+                    <span class="tb-label">Maintenance</span>
+                  </button>
                 </div>
               </div>
+
+              <!-- Task Name -->
               <div class="form-group">
                 <label class="form-label">Task Name</label>
                 <input type="text" class="form-input" id="task-name" placeholder="e.g. Morning Irrigation" maxlength="120"/>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                <div class="form-group">
-                  <label class="form-label">Time</label>
-                  <input type="time" class="form-input" id="task-time" value="06:00"/>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Farm / Zone</label>
-                  <select class="form-select" id="task-zone">
-                    <option value="Farm">Farm</option>
-                    <option value="Zone A">Zone A</option>
-                    <option value="Zone B">Zone B</option>
-                    <option value="Zone C">Zone C</option>
-                    <option value="Greenhouse">Greenhouse</option>
-                  </select>
-                </div>
+
+              <!-- Time -->
+              <div class="form-group">
+                <label class="form-label">Time</label>
+                <input type="time" class="form-input" id="task-time" value="06:00"/>
               </div>
+
+              <!-- Location (Farm only) -->
+              <div class="form-group">
+                <label class="form-label">Location</label>
+                <div class="location-display">
+                  <i class="fas fa-location-dot"></i> Farm
+                </div>
+                <input type="hidden" id="task-zone" value="Farm"/>
+              </div>
+
+              <!-- Notes -->
               <div class="form-group">
                 <label class="form-label">Notes <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
                 <textarea class="form-textarea" id="task-notes" placeholder="Additional details, duration, amounts…"></textarea>
               </div>
+
               <div class="btn-row">
                 <button type="button" class="btn btn-primary" id="add-btn" onclick="addEvent()"><i class="fas fa-plus"></i> Add Task</button>
-                <button type="button" class="btn btn-ghost"  onclick="clearForm()"><i class="fas fa-xmark"></i></button>
+                <button type="button" class="btn btn-ghost" onclick="clearForm()"><i class="fas fa-xmark"></i></button>
               </div>
             </div>
           </div>
@@ -232,7 +305,7 @@ if (!empty($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date']))
   <div class="modal">
     <div class="modal-head">
       <div class="modal-head-icon" id="modal-type-icon" style="background:var(--water-pale);color:var(--water);">
-        <i class="fas fa-pen-to-square"></i>
+        <i class="fas fa-droplet"></i>
       </div>
       <div>
         <div class="modal-title">Edit Task</div>
@@ -241,48 +314,84 @@ if (!empty($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date']))
       <button type="button" class="modal-close" onclick="closeModal()" title="Close"><i class="fas fa-xmark"></i></button>
     </div>
     <div class="modal-body">
+
+      <!-- Task Type -->
       <div class="form-group">
         <label class="form-label">Task Type</label>
-        <div class="type-selector">
-          <button type="button" class="type-btn" onclick="selectEditType('irrigation')"    id="edit-type-irrigation">   <i class="fas fa-droplet"></i> Irrigation</button>
-          <button type="button" class="type-btn" onclick="selectEditType('fertilization')" id="edit-type-fertilization"><i class="fas fa-flask"></i> Fertilization</button>
-          <button type="button" class="type-btn" onclick="selectEditType('harvest')"       id="edit-type-harvest">      <i class="fas fa-basket-shopping"></i> Harvest</button>
-          <button type="button" class="type-btn" onclick="selectEditType('maintenance')"   id="edit-type-maintenance">  <i class="fas fa-wrench"></i> Maintenance</button>
+        <div class="type-grid" id="edit-type-grid">
+          <button type="button" class="type-btn" id="edit-type-irrigation"
+            data-sel="sel-irr" data-pale="var(--water-pale)" data-color="var(--water)" data-icon="fa-droplet"
+            style="--hc:var(--water);--hp:var(--water-pale);"
+            onclick="selectEditType(this)">
+            <span class="tb-check"><i class="fas fa-check"></i></span>
+            <span class="tb-icon"><i class="fas fa-droplet"></i></span>
+            <span class="tb-label">Irrigation</span>
+          </button>
+          <button type="button" class="type-btn" id="edit-type-fertilization"
+            data-sel="sel-frt" data-pale="var(--solar-pale)" data-color="var(--solar)" data-icon="fa-flask"
+            style="--hc:var(--solar);--hp:var(--solar-pale);"
+            onclick="selectEditType(this)">
+            <span class="tb-check"><i class="fas fa-check"></i></span>
+            <span class="tb-icon"><i class="fas fa-flask"></i></span>
+            <span class="tb-label">Fertilization</span>
+          </button>
+          <button type="button" class="type-btn" id="edit-type-harvest"
+            data-sel="sel-har" data-pale="var(--red-pale)" data-color="var(--red)" data-icon="fa-basket-shopping"
+            style="--hc:var(--red);--hp:var(--red-pale);"
+            onclick="selectEditType(this)">
+            <span class="tb-check"><i class="fas fa-check"></i></span>
+            <span class="tb-icon"><i class="fas fa-basket-shopping"></i></span>
+            <span class="tb-label">Harvest</span>
+          </button>
+          <button type="button" class="type-btn" id="edit-type-maintenance"
+            data-sel="sel-mnt" data-pale="var(--green-pale)" data-color="var(--green-mid)" data-icon="fa-wrench"
+            style="--hc:var(--green-mid);--hp:var(--green-pale);"
+            onclick="selectEditType(this)">
+            <span class="tb-check"><i class="fas fa-check"></i></span>
+            <span class="tb-icon"><i class="fas fa-wrench"></i></span>
+            <span class="tb-label">Maintenance</span>
+          </button>
         </div>
       </div>
+
+      <!-- Task Name -->
       <div class="form-group">
         <label class="form-label">Task Name</label>
         <input type="text" class="form-input" id="edit-name" placeholder="Task name" maxlength="120"/>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="form-group">
-          <label class="form-label">Time</label>
-          <input type="time" class="form-input" id="edit-time"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Farm / Zone</label>
-          <select class="form-select" id="edit-zone">
-            <option value="Farm">Farm</option>
-            <option value="Zone A">Zone A</option>
-            <option value="Zone B">Zone B</option>
-            <option value="Zone C">Zone C</option>
-            <option value="Greenhouse">Greenhouse</option>
-          </select>
-        </div>
+
+      <!-- Time -->
+      <div class="form-group">
+        <label class="form-label">Time</label>
+        <input type="time" class="form-input" id="edit-time"/>
       </div>
+
+      <!-- Location (Farm only) -->
+      <div class="form-group">
+        <label class="form-label">Location</label>
+        <div class="location-display">
+          <i class="fas fa-location-dot"></i> Farm
+        </div>
+        <input type="hidden" id="edit-zone" value="Farm"/>
+      </div>
+
+      <!-- Reschedule Date -->
       <div class="form-group">
         <label class="form-label">Date <span style="font-weight:400;text-transform:none;letter-spacing:0;">(reschedule)</span></label>
         <input type="date" class="form-input" id="edit-date"/>
       </div>
+
+      <!-- Notes -->
       <div class="form-group" style="margin-bottom:0;">
         <label class="form-label">Notes <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
         <textarea class="form-textarea" id="edit-notes" placeholder="Additional details, duration, amounts…"></textarea>
       </div>
+
     </div>
     <div class="modal-footer">
-      <button type="button" class="btn btn-save"   onclick="saveEdit()">          <i class="fas fa-floppy-disk"></i> Save Changes</button>
-      <button type="button" class="btn btn-delete" onclick="deleteFromModal()">   <i class="fas fa-trash-can"></i> Delete</button>
-      <button type="button" class="btn btn-ghost"  onclick="closeModal()">Cancel</button>
+      <button type="button" class="btn btn-save"   onclick="saveEdit()">       <i class="fas fa-floppy-disk"></i> Save Changes</button>
+      <button type="button" class="btn btn-delete" onclick="deleteFromModal()"><i class="fas fa-trash-can"></i> Delete</button>
+      <button type="button" class="btn btn-ghost"  onclick="closeModal()" style="margin-left:auto;">Cancel</button>
     </div>
   </div>
 </div>
@@ -339,7 +448,7 @@ function showToast(msg, isError = false) {
 const NOW      = new Date();
 const todayKey = fmtKey(NOW.getFullYear(), NOW.getMonth() + 1, NOW.getDate());
 let calDate    = new Date(NOW.getFullYear(), NOW.getMonth(), 1);
-let events     = {};         
+let events     = {};
 let selectedDate = null;
 let selectedType = 'irrigation';
 let editType     = 'irrigation';
@@ -347,11 +456,13 @@ let editingKey   = null;
 let editingId    = null;
 let isSaving     = false;
 
+const ALL_SEL_CLASSES = ['sel-irr','sel-frt','sel-har','sel-mnt'];
+
 const TC = {
-  irrigation:    { color:'var(--water)',     pale:'var(--water-pale)',  icon:'fa-droplet',        pill:'irrigation',    badge:'badge-irr', label:'Irrigation'   },
-  fertilization: { color:'var(--solar)',     pale:'var(--solar-pale)',  icon:'fa-flask',           pill:'fertilization', badge:'badge-spr', label:'Fertilization'},
-  harvest:       { color:'var(--red)',       pale:'var(--red-pale)',    icon:'fa-basket-shopping', pill:'harvest',       badge:'badge-har', label:'Harvest'      },
-  maintenance:   { color:'var(--green-mid)', pale:'var(--green-pale)', icon:'fa-wrench',          pill:'maintenance',   badge:'badge-mnt', label:'Maintenance'  },
+  irrigation:    { color:'var(--water)',     pale:'var(--water-pale)',  icon:'fa-droplet',        selClass:'sel-irr', pill:'irrigation',    badge:'badge-irr', label:'Irrigation'   },
+  fertilization: { color:'var(--solar)',     pale:'var(--solar-pale)',  icon:'fa-flask',           selClass:'sel-frt', pill:'fertilization', badge:'badge-spr', label:'Fertilization'},
+  harvest:       { color:'var(--red)',       pale:'var(--red-pale)',    icon:'fa-basket-shopping', selClass:'sel-har', pill:'harvest',       badge:'badge-har', label:'Harvest'      },
+  maintenance:   { color:'var(--green-mid)', pale:'var(--green-pale)', icon:'fa-wrench',          selClass:'sel-mnt', pill:'maintenance',   badge:'badge-mnt', label:'Maintenance'  },
 };
 const TYPES = Object.keys(TC);
 
@@ -369,7 +480,6 @@ function loadSchedules(cb) {
     .then(r => r.json())
     .then(data => {
       for (let d = 1; d <= lastD; d++) delete events[fmtKey(y, m, d)];
-
       data.forEach(s => {
         const key = s.schedule_date;
         if (!events[key]) events[key] = [];
@@ -378,7 +488,7 @@ function loadSchedules(cb) {
           type : s.task_type,
           name : s.task_name,
           time : s.task_time ? s.task_time.slice(0,5) : '00:00',
-          zone : s.task_zone  || 'Farm',
+          zone : 'Farm',
           notes: s.task_notes || ''
         });
       });
@@ -407,14 +517,14 @@ function renderCalendar() {
   const prevDays = new Date(y, mo,     0).getDate();
 
   for (let i = firstDay - 1; i >= 0; i--)
-    renderCell(grid, prevDays - i, fmtKey(y, mo, prevDays - i), true);     
+    renderCell(grid, prevDays - i, fmtKey(y, mo, prevDays - i), true);
 
   for (let d = 1; d <= daysInM; d++)
-    renderCell(grid, d, fmtKey(y, mo + 1, d), false);                      
+    renderCell(grid, d, fmtKey(y, mo + 1, d), false);
 
   const rem = (firstDay + daysInM) % 7;
   if (rem > 0) for (let d = 1; d <= 7 - rem; d++)
-    renderCell(grid, d, fmtKey(y, mo + 2, d), true);                        
+    renderCell(grid, d, fmtKey(y, mo + 2, d), true);
 }
 
 function renderCell(grid, d, key, otherMonth) {
@@ -422,7 +532,7 @@ function renderCell(grid, d, key, otherMonth) {
   const cellDate = new Date(key + 'T00:00:00');
   const today = new Date(); today.setHours(0,0,0,0);
   const isPast = cellDate < today;
-  
+
   cell.className = 'cal-cell' + (otherMonth ? ' other-month' : '') + (isPast ? ' past-date' : '');
   if (key === todayKey && !otherMonth) cell.classList.add('today');
   if (key === selectedDate)            cell.classList.add('selected');
@@ -433,7 +543,7 @@ function renderCell(grid, d, key, otherMonth) {
     const safe = ev.name.length > 14 ? ev.name.slice(0, 13) + '…' : ev.name;
     pillsHTML += `<div class="cal-event-pill ${TC[ev.type].pill}"><i class="fas ${TC[ev.type].icon}"></i> ${safe}</div>`;
   });
-  if (evs.length > 3) 
+  if (evs.length > 3)
     pillsHTML += `<div class="cal-event-pill maintenance">+${evs.length - 3} more</div>`;
 
   cell.innerHTML = `
@@ -453,7 +563,7 @@ function selectDate(key) {
   const cellDate = new Date(key + 'T00:00:00');
   const today = new Date(); today.setHours(0,0,0,0);
   if (cellDate < today) { showToast('Cannot select past dates.', true); return; }
-  
+
   selectedDate = key;
   renderCalendar();
   renderDayPanel();
@@ -491,7 +601,7 @@ function renderDayPanel() {
         <div class="event-title">${escHtml(ev.name)}</div>
         <div class="event-meta">
           <span class="upcoming-badge ${cfg.badge}">${cfg.label}</span>
-          ${escHtml(ev.zone)}${ev.notes ? ' · ' + escHtml(ev.notes) : ''}
+          Farm${ev.notes ? ' · ' + escHtml(ev.notes) : ''}
         </div>
         <div class="event-time"><i class="fas fa-clock" style="margin-right:4px;font-size:.65rem;"></i>${ev.time}</div>
       </div>
@@ -530,10 +640,10 @@ function renderUpcoming() {
       <div class="event-dot" style="background:${cfg.color};flex-shrink:0;"></div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:.84rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(ev.name)}</div>
-        <div style="font-size:.72rem;color:var(--text-muted);margin-top:2px;">${dayLabel} · ${ev.time} · ${escHtml(ev.zone)}</div>
+        <div style="font-size:.72rem;color:var(--text-muted);margin-top:2px;">${dayLabel} · ${ev.time} · Farm</div>
       </div>
       <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;">
-        <span class="upcoming-badge ${cfg.badge}">${cfg.label}</span>
+        <span class="upcoming-badge ${cfg.badge}"><i class="fas ${cfg.icon}" style="margin-right:3px;"></i>${cfg.label}</span>
         <button type="button" class="btn-edit-sm" style="padding:4px 8px;font-size:.7rem;" title="Edit" onclick="openEditModal('${key}', ${ev.id})">
           <i class="fas fa-pen"></i>
         </button>
@@ -542,38 +652,46 @@ function renderUpcoming() {
   });
 }
 
-function selectType(type) {
-  selectedType = type;
-  TYPES.forEach(t => {
-    const btn = document.getElementById('type-' + t);
-    if (!btn) return;
-    TYPES.forEach(cls => btn.classList.remove('selected-' + cls));
-    if (t === type) btn.classList.add('selected-' + type);
+/* ══════════ TYPE SELECTION ══════════ */
+function selectType(btn) {
+  const grid = document.getElementById('add-type-grid');
+  grid.querySelectorAll('.type-btn').forEach(b => {
+    ALL_SEL_CLASSES.forEach(c => b.classList.remove(c));
   });
+  btn.classList.add(btn.dataset.sel);
+
+  // Map sel class back to type string
+  const selToType = { 'sel-irr':'irrigation', 'sel-frt':'fertilization', 'sel-har':'harvest', 'sel-mnt':'maintenance' };
+  selectedType = selToType[btn.dataset.sel];
 }
 
-function selectEditType(type) {
-  editType = type;
-  const cfg = TC[type];
-  TYPES.forEach(t => {
-    const btn = document.getElementById('edit-type-' + t);
-    if (!btn) return;
-    TYPES.forEach(cls => btn.classList.remove('selected-' + cls));
-    if (t === type) btn.classList.add('selected-' + type);
+function selectEditType(btn) {
+  const grid = document.getElementById('edit-type-grid');
+  grid.querySelectorAll('.type-btn').forEach(b => {
+    ALL_SEL_CLASSES.forEach(c => b.classList.remove(c));
   });
+  btn.classList.add(btn.dataset.sel);
+
+  const selToType = { 'sel-irr':'irrigation', 'sel-frt':'fertilization', 'sel-har':'harvest', 'sel-mnt':'maintenance' };
+  editType = selToType[btn.dataset.sel];
+
+  // Update modal header icon
   const icon = document.getElementById('modal-type-icon');
-  if (icon) { icon.style.background = cfg.pale; icon.style.color = cfg.color; }
+  if (icon) {
+    icon.style.background = btn.dataset.pale;
+    icon.style.color      = btn.dataset.color;
+    icon.innerHTML        = '<i class="fas ' + btn.dataset.icon + '"></i>';
+  }
 }
 
 /* ══════════ ADD EVENT ══════════ */
 function addEvent() {
   if (!selectedDate) { showToast('Please select a date on the calendar first.', true); return; }
-  
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+
+  const today = new Date(); today.setHours(0,0,0,0);
   const selected = new Date(selectedDate + 'T00:00:00');
   if (selected < today) { showToast('Cannot schedule tasks on past dates.', true); return; }
-  
+
   const name = document.getElementById('task-name').value.trim();
   if (!name) { document.getElementById('task-name').focus(); showToast('Task name is required.', true); return; }
   if (isSaving) return;
@@ -588,8 +706,8 @@ function addEvent() {
     date   : selectedDate,
     type   : selectedType,
     name   : name,
-    time   : document.getElementById('task-time').value  || '06:00',
-    zone   : document.getElementById('task-zone').value,
+    time   : document.getElementById('task-time').value || '06:00',
+    zone   : 'Farm',
     notes  : document.getElementById('task-notes').value.trim()
   });
 
@@ -603,7 +721,7 @@ function addEvent() {
           type : selectedType,
           name : name,
           time : document.getElementById('task-time').value || '06:00',
-          zone : document.getElementById('task-zone').value,
+          zone : 'Farm',
           notes: document.getElementById('task-notes').value.trim()
         });
         events[selectedDate].sort((a, b) => a.time.localeCompare(b.time));
@@ -626,11 +744,11 @@ function addEvent() {
 
 /* ══════════ DELETE ══════════ */
 let deleteTargetKey = null;
-let deleteTargetId = null;
+let deleteTargetId  = null;
 
 function confirmDelete(key, id, name) {
   deleteTargetKey = key;
-  deleteTargetId = id;
+  deleteTargetId  = id;
   document.getElementById('delete-task-name').textContent = name;
   document.getElementById('delete-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -640,7 +758,7 @@ function closeDeleteModal() {
   document.getElementById('delete-modal').classList.remove('open');
   document.body.style.overflow = '';
   deleteTargetKey = null;
-  deleteTargetId = null;
+  deleteTargetId  = null;
 }
 
 function handleDeleteBackdropClick(e) {
@@ -650,27 +768,20 @@ function handleDeleteBackdropClick(e) {
 function confirmDeleteEvent() {
   if (deleteTargetKey === null || deleteTargetId === null) return;
   const key = deleteTargetKey;
-  const id = deleteTargetId;
+  const id  = deleteTargetId;
   closeDeleteModal();
   deleteEvent(key, id);
 }
 
 function deleteEvent(key, id) {
   const body = new URLSearchParams({ action:'delete', id: String(id) });
-  console.log('Sending delete request:', body.toString());
   fetch('save_schedule.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body })
-    .then(r => {
-      console.log('Delete response status:', r.status);
-      return r.json();
-    })
+    .then(r => r.json())
     .then(data => {
-      console.log('Delete response data:', data);
       if (data.success || data.deleted) {
         if (events[key] && Array.isArray(events[key])) {
           events[key] = events[key].filter(e => Number(e.id) !== Number(id));
-          if (events[key].length === 0) {
-            delete events[key];
-          }
+          if (events[key].length === 0) delete events[key];
         }
         renderCalendar();
         renderDayPanel();
@@ -680,16 +791,12 @@ function deleteEvent(key, id) {
         showToast('Error: ' + (data.error || 'Could not delete task.'), true);
       }
     })
-    .catch(err => {
-      console.error('Delete error:', err);
-      showToast('Network error.', true);
-    });
+    .catch(() => showToast('Network error.', true));
 }
 
 function clearForm() {
   document.getElementById('task-name').value  = '';
   document.getElementById('task-time').value  = '06:00';
-  document.getElementById('task-zone').value  = 'Farm';
   document.getElementById('task-notes').value = '';
 }
 
@@ -712,10 +819,24 @@ function openEditModal(key, id) {
 
   document.getElementById('edit-name').value  = ev.name;
   document.getElementById('edit-time').value  = ev.time;
-  document.getElementById('edit-zone').value  = ev.zone;
   document.getElementById('edit-date').value  = key;
   document.getElementById('edit-notes').value = ev.notes || '';
-  selectEditType(ev.type);
+
+  // Select the matching type button
+  const grid = document.getElementById('edit-type-grid');
+  const typeToSel = { irrigation:'sel-irr', fertilization:'sel-frt', harvest:'sel-har', maintenance:'sel-mnt' };
+  grid.querySelectorAll('.type-btn').forEach(b => {
+    ALL_SEL_CLASSES.forEach(c => b.classList.remove(c));
+    if (b.dataset.sel === typeToSel[ev.type]) {
+      b.classList.add(b.dataset.sel);
+      // Update modal header icon
+      const icon = document.getElementById('modal-type-icon');
+      icon.style.background = b.dataset.pale;
+      icon.style.color      = b.dataset.color;
+      icon.innerHTML        = '<i class="fas ' + b.dataset.icon + '"></i>';
+    }
+  });
+  editType = ev.type;
 
   const d = new Date(key + 'T00:00:00');
   document.getElementById('modal-date-label').textContent =
@@ -738,25 +859,26 @@ function handleBackdropClick(e) {
 
 function saveEdit() {
   if (editingKey === null || editingId === null) return;
-  
+
   const newDate = document.getElementById('edit-date').value || editingKey;
   const editDate = new Date(newDate + 'T00:00:00');
   const today = new Date(); today.setHours(0,0,0,0);
   if (editDate < today) { showToast('Cannot reschedule to a past date.', true); return; }
-  
+
   const name = document.getElementById('edit-name').value.trim();
   if (!name) { document.getElementById('edit-name').focus(); showToast('Task name is required.', true); return; }
 
-  const time    = document.getElementById('edit-time').value || '06:00';
-  const zone    = document.getElementById('edit-zone').value;
-  const notes   = document.getElementById('edit-notes').value.trim();
+  const time  = document.getElementById('edit-time').value || '06:00';
+  const notes = document.getElementById('edit-notes').value.trim();
 
   const body = new URLSearchParams({
     action: 'update',
     id    : editingId,
     date  : newDate,
     type  : editType,
-    name, time, zone, notes
+    name, time,
+    zone  : 'Farm',
+    notes
   });
 
   fetch('save_schedule.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body })
@@ -768,7 +890,7 @@ function saveEdit() {
           if (events[editingKey].length === 0) delete events[editingKey];
         }
         if (!events[newDate]) events[newDate] = [];
-        events[newDate].push({ id: editingId, type: editType, name, time, zone, notes });
+        events[newDate].push({ id: editingId, type: editType, name, time, zone: 'Farm', notes });
         events[newDate].sort((a, b) => a.time.localeCompare(b.time));
 
         if (newDate !== editingKey) {
@@ -797,18 +919,18 @@ function deleteFromModal() {
   setTimeout(() => confirmDelete(editingKey, editingId, name), 100);
 }
 
+/* ══════════ KEYBOARD SHORTCUTS ══════════ */
 document.addEventListener('keydown', e => {
-  const editModal = document.getElementById('edit-modal');
+  const editModal   = document.getElementById('edit-modal');
   const deleteModal = document.getElementById('delete-modal');
-  
+
   if (editModal.classList.contains('open')) {
     if (e.key === 'Escape') closeModal();
     if (e.key === 'Enter' && e.ctrlKey) saveEdit();
   }
-  
   if (deleteModal.classList.contains('open')) {
     if (e.key === 'Escape') closeDeleteModal();
-    if (e.key === 'Enter') confirmDeleteEvent();
+    if (e.key === 'Enter')  confirmDeleteEvent();
   }
 });
 
@@ -824,7 +946,9 @@ function escHtml(str) {
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-selectType('irrigation');
+/* ══════════ INIT ══════════ */
+// Pre-select irrigation on load
+document.getElementById('type-irrigation').classList.add('sel-irr');
 
 const preselectDate = '<?= $preselect_date ?>';
 if (preselectDate) {

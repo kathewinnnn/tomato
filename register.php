@@ -41,6 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
             $errors['email'] = 'Email address is required.';
         } elseif (!filter_var($fields['email'], FILTER_VALIDATE_EMAIL)) {
             $errors['email'] = 'Please enter a valid email address.';
+        } elseif (!preg_match('/^[a-zA-Z0-9._%+-]+@gmail\.com$/', $fields['email'])) {
+            $errors['email'] = 'Please use a valid gmail.com email address.';
         } else {
             $emailChk = $conn->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
             $emailChk->bind_param('s', $fields['email']);
@@ -205,7 +207,7 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
                 type="email"
                 id="email"
                 name="email"
-                placeholder="you@gmail.com"
+                placeholder="yourname@gmail.com"
                 value="<?= $safe['email'] ?>"
                 autocomplete="email"
                 class="<?= $errors['email'] ? 'is-invalid' : '' ?>"
